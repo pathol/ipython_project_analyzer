@@ -22,25 +22,43 @@ class Matchmaker(ast.NodeVisitor):
         self.generic_visit(node)
 
     def visit_Call(self, node):
-        try:
-            self.calls = self.calls.append({'line': node.lineno, 'name': node.func.attr, 'obj': node.func.value.id},
-                                           ignore_index=True)
-        except AttributeError:
+        if type(node.func).__name__ == 'Name':
             self.calls = self.calls.append({'line': node.lineno, 'name': node.func.id}, ignore_index=True)
+        # Take care of multiple function called in one line
+        elif type(node.func).__name__ == 'Attribute':
+            call = node.func
+            count = 0
+            while count == 0:
+                if type(call.value).__name__ == 'Name':
+                    self.calls = self.calls.append({'line': node.lineno, 'name': node.func.attr, 'obj': call.value.id},
+                                                   ignore_index=True)
+                    count = 1
+                else:
+                    call = call.value.func
         self.generic_visit(node)
 
     def visit_Assign(self, node):
-        for name in node.targets:
-            try:
-                call = node.value.func
-                self.assign = self.assign.append(
-                    {'line': node.lineno, 'var': name.id, 'call_obj': call.value.id, 'call_name': call.attr},
-                    ignore_index=True)
-            except AttributeError:
-                continue
+        if type(node.value).__name__ == 'Call':
+            for name in node.targets:
+                call_0 = node.value.func
+                # Take care of multiple function called in one line
+                if type(call_0).__name__ == 'Name':
+                    self.assign = self.assign.append({'line': node.lineno, 'var': name.id, 'call_name': call_0.id},
+                                                     ignore_index=True)
+                elif type(call_0).__name__ == 'Attribute':
+                    call = call_0
+                    count = 0
+                    while count == 0:
+                        if type(call.value).__name__ == 'Name':
+                            self.assign = self.assign.append(
+                                {'line': node.lineno, 'var': name.id, 'call_obj': call.value.id,
+                                 'call_name': call.attr}, ignore_index=True)
+                            count = 1
+                        else:
+                            call = call.value.func
         self.generic_visit(node)
 
-    # This function takes a row of self.assign a and the function name c to match with the modules.
+    # This function takes a row of self.assign a and the function name c to match with the modules
     def a_match(self, a, c):
         if a['call_obj'] is not np.nan:
             isname = self.mods[self.mods.name.isin([a['call_obj']])]
@@ -54,8 +72,8 @@ class Matchmaker(ast.NodeVisitor):
                 self.matchs = self.matchs.append(
                     {'line': a['line'], 'function': c, 'package': mod[0], 'class': a['call_name']}, ignore_index=True)
             else:
-                return 0
-            return 1
+                return (0)
+            return (1)
 
         else:
             self.matchs = self.matchs.append({'line': a['line'], 'function': c, 'class': a['call_name']},
