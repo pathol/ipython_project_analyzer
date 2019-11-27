@@ -58,62 +58,62 @@ class Matchmaker(ast.NodeVisitor):
                             call = call.value.func
         self.generic_visit(node)
 
-        # This function takes a row of self.assign a and the function name c to match with the modules
-        def a_match(self, a, c):
-            if a['call_obj'] is not np.nan:
-                isname = self.mods[self.mods.name.isin([a['call_obj']])]
-                isas = self.mods[self.mods.asname.isin([a['call_obj']])]
-                if not isname.empty:
-                    mod = list(isname['name'])
-                    self.matchs = self.matchs.append(
-                        {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': a['call_name']},
-                        ignore_index=True)
-                elif not isas.empty:
-                    mod = list(isas['name'])
-                    self.matchs = self.matchs.append(
-                        {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': a['call_name']},
-                        ignore_index=True)
-                else:
-                    return (0)
-                return (1)
-
+    # This function takes a row of self.assign a and the function name c to match with the modules
+    def a_match(self, a, c):
+        if a['call_obj'] is not np.nan:
+            isname = self.mods[self.mods.name.isin([a['call_obj']])]
+            isas = self.mods[self.mods.asname.isin([a['call_obj']])]
+            if not isname.empty:
+                mod = list(isname['name'])
+                self.matchs = self.matchs.append(
+                    {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': a['call_name']},
+                    ignore_index=True)
+            elif not isas.empty:
+                mod = list(isas['name'])
+                self.matchs = self.matchs.append(
+                    {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': a['call_name']},
+                    ignore_index=True)
             else:
-                self.matchs = self.matchs.append({'line': a['line'], 'function': c, 'class': a['call_name']},
+                return (0)
+            return (1)
+
+        else:
+            self.matchs = self.matchs.append({'line': a['line'], 'function': c, 'class': a['call_name']},
+                                             ignore_index=True)
+
+    def match(self, call):
+        if call['obj'] is not np.nan:
+            isname = self.mods[self.mods['name'].isin([call['obj']])]
+            isas = self.mods[self.mods['asname'].isin([call['obj']])]
+            isfrom = self.mods[self.mods['from'].isin([call['obj']])]
+            if not isname.empty:
+                mod = list(isname['name'])
+                self.matchs = self.matchs.append({'line': call['line'], 'function': call['name'], 'package': mod[0]},
                                                  ignore_index=True)
-
-        def match(self, call):
-            if call['obj'] is not np.nan:
-                isname = self.mods[self.mods['name'].isin([call['obj']])]
-                isas = self.mods[self.mods['asname'].isin([call['obj']])]
-                isfrom = self.mods[self.mods['from'].isin([call['obj']])]
-                if not isname.empty:
-                    mod = list(isname['name'])
-                    self.matchs = self.matchs.append(
-                        {'line': call['line'], 'function': call['name'], 'package': mod[0]}, ignore_index=True)
-                elif not isas.empty:
-                    mod = list(isas['name'])
-                    self.matchs = self.matchs.append(
-                        {'line': call['line'], 'function': call['name'], 'package': mod[0]}, ignore_index=True)
-                elif not isfrom.empty:
-                    mod = list(isfrom['from'])
-                    modc = list(isfrom['name'])
-                    self.matchs = self.matchs.append(
-                        {'line': call['line'], 'function': call['name'], 'package': mod[0], 'class': modc[0]},
-                        ignore_index=True)
-                else:
-                    # Matching the function call object with list of assigned variables
-                    # Filter out Assignments that came after the function call
-                    before = self.assign[self.assign['line'] < call['line']]
-                    isobj = before[before['var'].isin([call['obj']])]
-                    if not isobj.empty:
-                        for index, a in isobj.sort_values(by='line', axis=0, ascending=False).iterrows():
-                            r = self.a_match(a, call)
-                            # If module name was found exit the loop
-                            if r == 1:
-                                break
-
+            elif not isas.empty:
+                mod = list(isas['name'])
+                self.matchs = self.matchs.append({'line': call['line'], 'function': call['name'], 'package': mod[0]},
+                                                 ignore_index=True)
+            elif not isfrom.empty:
+                mod = list(isfrom['from'])
+                modc = list(isfrom['name'])
+                self.matchs = self.matchs.append(
+                    {'line': call['line'], 'function': call['name'], 'package': mod[0], 'class': modc[0]},
+                    ignore_index=True)
             else:
-                self.matchs = self.matchs.append({'line': call['line'], 'function': call['name']}, ignore_index=True)
+                # Matching the function call object with list of assigned variables
+                # Filter out Assignments that came after the function call
+                before = self.assign[self.assign['line'] < call['line']]
+                isobj = before[before['var'].isin([call['obj']])]
+                if not isobj.empty:
+                    for index, a in isobj.sort_values(by='line', axis=0, ascending=False).iterrows():
+                        r = self.a_match(a, call)
+                        # If module name was found exit the loop
+                        if r == 1:
+                            break
+
+        else:
+            self.matchs = self.matchs.append({'line': call['line'], 'function': call['name']}, ignore_index=True)
 
     def matching(self):
         self.calls.apply(lambda x: self.match(x), axis=1)
