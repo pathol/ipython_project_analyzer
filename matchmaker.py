@@ -29,12 +29,15 @@ class Matchmaker(ast.NodeVisitor):
             call = node.func
             count = 0
             while count == 0:
-                if type(call.value).__name__ == 'Name':
-                    self.calls = self.calls.append({'line': node.lineno, 'name': node.func.attr, 'obj': call.value.id},
-                                                   ignore_index=True)
-                    count = 1
-                else:
-                    call = call.value.func
+                try:
+                    if type(call.value).__name__ == 'Name':
+                        self.calls = self.calls.append({'line': node.lineno, 'name': node.func.attr, 'obj': call.value.id},
+                                                       ignore_index=True)
+                        count = 1
+                    else:
+                        call = call.value.func
+                except AttributeError:
+                    break
         self.generic_visit(node)
 
     def visit_Assign(self, node):
@@ -49,13 +52,16 @@ class Matchmaker(ast.NodeVisitor):
                     call = call_0
                     count = 0
                     while count == 0:
-                        if type(call.value).__name__ == 'Name':
-                            self.assign = self.assign.append(
-                                {'line': node.lineno, 'var': name.id, 'call_obj': call.value.id,
-                                 'call_name': call.attr}, ignore_index=True)
-                            count = 1
-                        else:
-                            call = call.value.func
+                        try:
+                            if type(call.value).__name__ == 'Name':
+                                self.assign = self.assign.append(
+                                    {'line': node.lineno, 'var': name.id, 'call_obj': call.value.id,
+                                    'call_name': call.attr}, ignore_index=True)
+                                count = 1
+                            else:
+                                call = call.value.func
+                        except AttributeError:
+                            break
         self.generic_visit(node)
 
     # This function takes a row of self.assign a and the function name c to match with the modules
