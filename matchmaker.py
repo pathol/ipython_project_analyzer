@@ -63,19 +63,36 @@ class Matchmaker(ast.NodeVisitor):
         if a['call_obj'] is not np.nan:
             isname = self.mods[self.mods.name.isin([a['call_obj']])]
             isas = self.mods[self.mods.asname.isin([a['call_obj']])]
+            isfrom = self.mods[self.mods['from'].isin([a['call_obj']])]
             if not isname.empty:
                 mod = list(isname['name'])
-                self.matchs = self.matchs.append(
-                    {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': a['call_name']},
-                    ignore_index=True)
+                if a['call_name'][0].isupper():
+                    self.matchs = self.matchs.append(
+                        {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': a['call_name']},
+                        ignore_index=True)
+                else:
+                    self.matchs = self.matchs.append(
+                        {'line': c['line'], 'function': c['name'], 'package': mod[0]},
+                        ignore_index=True)
             elif not isas.empty:
                 mod = list(isas['name'])
+                if a['call_name'][0].isupper():
+                    self.matchs = self.matchs.append(
+                        {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': a['call_name']},
+                        ignore_index=True)
+                else:
+                    self.matchs = self.matchs.append(
+                        {'line': c['line'], 'function': c['name'], 'package': mod[0]},
+                        ignore_index=True)
+            elif not isfrom.empty:
+                mod = list(isfrom['from'])
+                modc = list(isfrom['name'])
                 self.matchs = self.matchs.append(
-                    {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': a['call_name']},
+                    {'line': c['line'], 'function': c['name'], 'package': mod[0], 'class': modc[0]},
                     ignore_index=True)
             else:
-                return (0)
-            return (1)
+                return 0
+            return 1
 
         else:
             self.matchs = self.matchs.append({'line': a['line'], 'function': c, 'class': a['call_name']},
@@ -120,13 +137,13 @@ class Matchmaker(ast.NodeVisitor):
         return self.matchs
 
     def get_Import(self):
-        return (self.mods)
+        return self.mods
 
     def get_Call(self):
-        return (self.calls)
+        return self.calls
 
     def get_Assign(self):
-        return (self.assign)
+        return self.assign
 
     def get_Match(self):
-        return (self.matchs)
+        return self.matchs
