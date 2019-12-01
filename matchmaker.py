@@ -101,7 +101,7 @@ class Matchmaker(ast.NodeVisitor):
             return 1
 
         else:
-            self.matchs = self.matchs.append({'line': a['line'], 'function': c, 'class': a['call_name']},
+            self.matchs = self.matchs.append({'line': c['line'], 'function': c['name'], 'class': a['call_name']},
                                              ignore_index=True)
 
     def match(self, call):
