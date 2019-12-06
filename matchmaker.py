@@ -134,6 +134,10 @@ class Matchmaker(ast.NodeVisitor):
                         # If module name was found exit the loop
                         if r == 1:
                             break
+                    else:
+                        self.matchs = self.matchs.append(
+                            {'line': call['line'], 'function': call['name']},
+                            ignore_index=True)
 
         else:
             self.matchs = self.matchs.append({'line': call['line'], 'function': call['name']}, ignore_index=True)
