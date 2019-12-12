@@ -42,26 +42,29 @@ class Matchmaker(ast.NodeVisitor):
 
     def visit_Assign(self, node):
         if type(node.value).__name__ == 'Call':
-            for name in node.targets:
-                call_0 = node.value.func
-                # Take care of multiple function called in one line
-                if type(call_0).__name__ == 'Name':
-                    self.assign = self.assign.append({'line': node.lineno, 'var': name.id, 'call_name': call_0.id},
-                                                     ignore_index=True)
-                elif type(call_0).__name__ == 'Attribute':
-                    call = call_0
-                    count = 0
-                    while count == 0:
-                        try:
-                            if type(call.value).__name__ == 'Name':
-                                self.assign = self.assign.append(
-                                    {'line': node.lineno, 'var': name.id, 'call_obj': call.value.id,
-                                    'call_name': call.attr}, ignore_index=True)
-                                count = 1
-                            else:
-                                call = call.value.func
-                        except AttributeError:
-                            break
+            try:
+                for name in node.targets:
+                    call_0 = node.value.func
+                    # Take care of multiple function called in one line
+                    if type(call_0).__name__ == 'Name':
+                        self.assign = self.assign.append({'line': node.lineno, 'var': name.id, 'call_name': call_0.id},
+                                                         ignore_index=True)
+                    elif type(call_0).__name__ == 'Attribute':
+                        call = call_0
+                        count = 0
+                        while count == 0:
+                            try:
+                                if type(call.value).__name__ == 'Name':
+                                    self.assign = self.assign.append(
+                                        {'line': node.lineno, 'var': name.id, 'call_obj': call.value.id,
+                                        'call_name': call.attr}, ignore_index=True)
+                                    count = 1
+                                else:
+                                    call = call.value.func
+                            except AttributeError:
+                                break
+            except AttributeError:
+                pass
         self.generic_visit(node)
 
     # This function takes a row of self.assign a and the function name c to match with the modules
